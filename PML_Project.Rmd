@@ -1,0 +1,103 @@
+---
+title: "Detecting mistakes in weight-lifting exercieses by using activity recognition techniques"
+author: "Lance Bryant"
+date: "July 19, 2014"
+output:
+  html_document:
+    number_sections: yes
+---
+
+# Introduction
+
+Using data collected by Groupware@LES, we build a model to detect mistakes (if any) for individuals performing unilateral dumbbell bicep curls. The data was collected from four 9 degrees of freedom Razor inertial measurement units (IMU), which provide three-axes acceleration, gyroscope and magnetometer data. These sensors were mounted in the users’ glove, armband, lumbar belt and dumbbell. We find that from this data, we can accurately predict if an individual is performing the exercise correctly, or making a mistake such as throwing the elbows to the front, lifting the dumbbell only halfway, lowering the dumbbell only halfway, or throwing the hips to the front. 
+
+# Data
+
+We begin by loading the necessary libraries and data.
+
+```{r, cache = TRUE}
+library(caret)
+set.seed(126)
+```
+
+
+```{r, cache=TRUE}
+train <- read.csv("pml-training.csv", na.strings=c("NA", ""))
+test_final <- read.csv("pml-testing.csv", na.strings=c("NA", ""))
+dim(train); dim(test_final)
+```
+
+We see from above that the training set has 160 variables for each of the 19,622 times the measurements of the sensors were recorded; whereas, the testing set consists of a small sample of 20 times. The exercises were performed by six male participants aged between 20-28 years, with little weight lifting experience. The table below shows how many times the measurements were taken for each participant.
+
+
+```{r}
+table(train$user_name, train$classe)
+```
+
+Inspection of the data reveals that many variables consist of a high number of `NA` values. We remove these variables from the dataset along with variables that have no bearing on the exercises (user name, time of meausurement, etc.)
+
+```{r}
+table(colSums(is.na(train))); table(colSums(is.na(test_final)))
+```
+
+```{r}
+train_clean <- train[-c(1:7)]
+train_clean <- train_clean[,colSums(is.na(train_clean)) == 0]
+```
+
+# Building the model
+
+In this section, we build a machine learning model for predicting the `classe` value based on the other features of the dataset. We use a random forest machine learning technique. First we partition our cleaned training set, and then build the model. 
+
+```{r, cache=TRUE}
+inTrain = createDataPartition(y = train_clean$classe, p = 0.6, list = FALSE)
+train_small <- train_clean[inTrain,]
+test_small <- train_clean[-inTrain,]
+```
+
+```{r, cache = TRUE}
+modfit <- train(classe ~ ., data = train_small, method = "rf", prox = TRUE, 
+                trControl = trainControl(method = "cv", number = 4))
+```
+
+Below is a summary of the model.
+```{r, cache = TRUE}
+modfit
+```
+
+Below we disply two confusion matrices and related statistics. The first shows that the in-sample accuracy of our model is 100%. The second shows the out-of-sample accuracy is between 98.7% and 99.2% at the 95%-confidence level.
+
+```{r, cache = TRUE}
+train_small_pred <- predict(modfit, train_small)
+test_small_pred <- predict(modfit, test_small)
+confusionMatrix(train_small_pred, train_small$classe)
+confusionMatrix(test_small_pred, test_small$classe)
+```
+
+Next we show the 20 most important variables for our model.
+
+```{r, cache = TRUE}
+varImpPlot(modfit$finalModel, n.var = 20, main = "The final model")
+```
+
+# Final Prediction
+
+We apply our model to the original test data and make the following predictions, and then write them to a text files.
+
+```{r, cache = TRUE}
+answers <- as.character(predict(modfit, test_final)); answers
+pml_write_files = function(x) {
+    n = length(x)
+    for (i in 1:n) {
+        filename = paste0("problem_id_", i, ".txt")
+        write.table(x[i], file = filename, quote = FALSE, row.names = FALSE, 
+            col.names = FALSE)
+    }
+}
+
+pml_write_files(answers)
+```
+
+# Conclusion
+
+We chose to build a model using a random forest because it tends to be an accurate mode. We increased the robustness of the model by using $k$-fold cross validation. This model has a high out-of-sample accuracy, and correctly predicted the 20 cases in the original test data.
