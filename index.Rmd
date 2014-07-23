@@ -1,5 +1,5 @@
 ---
-title: "Detecting mistakes in weight-lifting exercieses by using activity recognition techniques"
+title: "Detecting mistakes in weight-lifting exercises by using activity recognition techniques"
 author: "Lance Bryant"
 date: "July 19, 2014"
 output:
@@ -34,7 +34,7 @@ We see from above that the training set has 160 variables for each of the 19,622
 table(train$user_name, train$classe)
 ```
 
-Inspection of the data reveals that many variables consist of a high number of `NA` values. We remove these variables from the dataset along with variables that have no bearing on the exercises (user name, time of meausurement, etc.)
+Inspection of the data reveals that many variables consist of a high number of `NA` values. We remove these variables from the dataset along with variables that have no bearing on the exercises (user name, time of measurement, etc.)
 
 ```{r}
 table(colSums(is.na(train))); table(colSums(is.na(test_final)))
@@ -65,7 +65,7 @@ Below is a summary of the model.
 modfit
 ```
 
-Below we disply two confusion matrices and related statistics. The first shows that the in-sample accuracy of our model is 100%. The second shows the out-of-sample accuracy is between 98.7% and 99.2% at the 95%-confidence level.
+Below we display two confusion matrices and related statistics. The first shows that the in-sample accuracy of our model is 100%. The second shows the out-of-sample accuracy is between 98.7% and 99.2% at the 95%-confidence level.
 
 ```{r, cache = TRUE}
 train_small_pred <- predict(modfit, train_small)
